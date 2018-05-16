@@ -1,0 +1,28 @@
+
+plugins {
+	id "java"
+	id "application"
+}
+
+mainClassName='com.github.adamldavis.Application'
+
+repositories {
+	mavenLocal()
+	jcenter() 
+}
+
+dependencies {
+
+	compile("org.springframework.boot:spring-boot-starter-web:2.0.2.RELEASE")
+	
+	compile 'io.reactivex.rxjava2:rxjava:2.1.9'
+	
+	compile 'io.projectreactor:reactor-core:3.1.7.RELEASE'
+	testCompile 'io.projectreactor:reactor-test:3.1.7.RELEASE'
+	
+	compile group: 'com.typesafe.akka', name: 'akka-stream_2.12', version:'2.5.12'
+	testCompile 'com.typesafe.akka:akka-stream-testkit_2.12:2.5.12'
+	
+	testCompile 'org.junit:junit:4.12'
+	testCompile 'org.hamcrest:hamcrest-all:1.3'
+}
