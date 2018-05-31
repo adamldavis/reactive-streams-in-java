@@ -1,19 +1,19 @@
 package com.github.adamldavis;
 
-import static java.util.Arrays.asList;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.reactivestreams.Publisher;
-
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import akka.stream.ActorMaterializerSettings;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
+
+import java.util.ArrayList;
+import java.util.*;
+
+import static java.util.Arrays.*;
 
 /**
  * Demonstrates Akka Streams in action.
@@ -32,7 +32,7 @@ public class AkkaStreamsDemo {
                 .map(v -> v * v) // 2
                 .runForeach(squares::add, mat); // 3
 
-        try {Thread.sleep(100); } catch (Exception e) {}
+        try {Thread.sleep(300); } catch (Exception e) {}
         
         return squares;
     }
@@ -51,9 +51,19 @@ public class AkkaStreamsDemo {
                         }, mat).toCompletableFuture().get())
                 .runForeach(squares::add, mat); //3
 
-        try {Thread.sleep(100); } catch (Exception e) {}
+        try {Thread.sleep(300); } catch (Exception e) {}
         
         return squares;
+    }
+
+    /** Creating a materializer with more configuration. */
+    public static Materializer createMaterializer() {
+        final ActorSystem system = ActorSystem.create("reactive-messages"); // 1
+        ActorMaterializerSettings settings = ActorMaterializerSettings.create(system) //2
+                .withMaxFixedBufferSize(100) //3
+                .withSyncProcessingLimit(2); //4
+
+        return ActorMaterializer.create(settings, system); //5
     }
 
     public final List<String> messageList = new ArrayList<>();
@@ -84,4 +94,5 @@ public class AkkaStreamsDemo {
                     .onDispose(() -> channel.close());
         });
     }
+
 }

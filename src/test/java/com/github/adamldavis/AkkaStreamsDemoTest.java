@@ -9,6 +9,7 @@ import static org.junit.Assert.assertNotNull;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class AkkaStreamsDemoTest {
@@ -37,6 +38,7 @@ public class AkkaStreamsDemoTest {
         
     Channel channel = new Channel();
 
+    @Ignore
     @Test
     public void testPrintErrors() {
         // given
