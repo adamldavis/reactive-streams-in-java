@@ -23,6 +23,6 @@ dependencies {
 	compile group: 'com.typesafe.akka', name: 'akka-stream_2.12', version:'2.5.12'
 	testCompile 'com.typesafe.akka:akka-stream-testkit_2.12:2.5.12'
 	
-	testCompile 'org.junit:junit:4.12'
+	testCompile 'junit:junit:4.12'
 	testCompile 'org.hamcrest:hamcrest-all:1.3'
 }
