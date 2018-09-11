@@ -8,6 +8,8 @@ build/
 #IDEA
 *.iws
 *.iml
+.idea
+*.ipr
 
 # Compiled class file
 *.class

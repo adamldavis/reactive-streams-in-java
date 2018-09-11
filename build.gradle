@@ -2,6 +2,7 @@
 plugins {
 	id "java"
 	id "application"
+	id "idea"
 }
 
 mainClassName='com.github.adamldavis.Application'
