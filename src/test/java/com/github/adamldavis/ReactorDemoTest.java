@@ -1,21 +1,22 @@
 package com.github.adamldavis;
 
-import static java.util.Arrays.asList;
+import static com.github.adamldavis.DemoData.*;
 import static org.junit.Assert.*;
 
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.Test;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
+import reactor.util.context.Context;
 
 public class ReactorDemoTest {
 
-    final List<Integer> squares = asList(1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121,
-            144, 169, 196, 225, 256, 289, 324, 361, 400, 441, 484, 529, 576,
-            625, 676, 729, 784, 841, 900, 961, 1024, 1089, 1156, 1225, 1296,
-            1369, 1444, 1521, 1600, 1681, 1764, 1849, 1936, 2025, 2116, 2209,
-            2304, 2401, 2500, 2601, 2704, 2809, 2916, 3025, 3136, 3249, 3364,
-            3481, 3600, 3721, 3844, 3969, 4096);
 
     ReactorDemo demo = new ReactorDemo();
 
@@ -30,6 +31,73 @@ public class ReactorDemoTest {
                 .stream().sorted().collect(Collectors.toList());
                 
         assertArrayEquals(squares.toArray(), result.toArray());
+    }
+
+    @Test
+    public void testStepVerifier_Mono_error() {
+        Mono<String> monoError = Mono.error(new RuntimeException("error"));
+
+        StepVerifier.create(monoError)
+                .expectErrorMessage("error")
+                .verify();
+    }
+
+    @Test
+    public void testStepVerifier_Mono_foo() {
+        Mono<String> foo = Mono.just("foo");
+        StepVerifier.create(foo)
+                .expectNext("foo")
+                .verifyComplete();
+    }
+
+    @Test
+    public void testStepVerifier_Flux() {
+        Flux<Integer> flux = Flux.just(1, 4, 9);
+
+        StepVerifier.create(flux)
+                .expectNext(1)
+                .expectNext(4)
+                .expectNext(9)
+                .expectComplete()
+                .verify(Duration.ofSeconds(10));
+    }
+
+    @Test
+    public void testStepVerifier_Context_Wrong() {
+        Flux<Integer> flux = Flux.just(1).subscriberContext(Context.of("pid", 123));
+
+        Flux<String> stringFlux = flux.flatMap(i ->
+                        Mono.subscriberContext().map(ctx -> i + " pid: " + ctx.getOrDefault("pid", 0)));
+
+        StepVerifier.create(stringFlux)
+                .expectNext("1 pid: 0")
+                .verifyComplete();
+    }
+
+    @Test
+    public void testStepVerifier_Context_Right() {
+        Flux<Integer> flux = Flux.just(1);
+
+        Flux<String> stringFlux = flux.flatMap(i ->
+                Mono.subscriberContext().map(ctx -> i + " pid: " + ctx.getOrDefault("pid", 0)));
+
+        StepVerifier.create(stringFlux.subscriberContext(Context.of("pid", 123)))
+                .expectNext("1 pid: 123")
+                .verifyComplete();
+    }
+
+    @Test
+    public void test_TestPublisher() {
+        TestPublisher<Object> publisher = TestPublisher.create(); //1
+        Flux<Object> stringFlux = publisher.flux(); //2
+        List list = new ArrayList(); //3
+
+        stringFlux.subscribe(next -> list.add(next), ex -> ex.printStackTrace()); //4
+        publisher.emit("foo", "bar"); //5
+
+        assertEquals(2, list.size()); //6
+        assertEquals("foo", list.get(0));
+        assertEquals("bar", list.get(1));
     }
 
 }
