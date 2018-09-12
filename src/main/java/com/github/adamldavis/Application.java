@@ -18,11 +18,11 @@ public class Application {
     @Bean
     Flux<String> createMessageFlux(final Channel channel) {
         Flux<String> bridge = Flux.create(sink -> {
-            sink.onRequest(n -> channel.poll(n).forEach(sink::next)) // 1
-                    .onCancel(() -> channel.cancel()) // 2
-                    .onDispose(() -> channel.close()); // 3
+                sink.onRequest(n -> channel.poll(n)) // 1
+                    .onCancel(channel::cancel) // 2
+                    .onDispose(channel::close); // 3
             
-            channel.register(sink::next);
+            channel.register(sink::next); //4
         });
         return bridge;
     }
