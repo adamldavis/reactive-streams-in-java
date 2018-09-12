@@ -7,6 +7,10 @@ plugins {
 
 mainClassName='com.github.adamldavis.Application'
 
+// REQUIRES Gradle 4.7+ and Java 10+
+sourceCompatibility = 1.10
+targetCompatibility = 1.10
+
 repositories {
 	mavenLocal()
 	jcenter() 
