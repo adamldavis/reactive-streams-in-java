@@ -9,7 +9,10 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.function.BiConsumer;
 
+import io.reactivex.Flowable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -25,7 +28,7 @@ import reactor.core.scheduler.Schedulers;
  * 
  * @author Adam L. Davis
  */
-public class ReactorDemo {
+public class ReactorDemo implements ReactiveStreamsDemo {
 
     public static List<Integer> doSquares() {
         List<Integer> squares = new ArrayList<>();
@@ -38,15 +41,48 @@ public class ReactorDemo {
     }
 
     public static List<Integer> doParallelSquares() {
-        List<Integer> squares = new ArrayList<>();
-        Flux.range(1, 64).flatMap(v -> // 1
-        Mono.just(v).subscribeOn(Schedulers.newSingle("comp")).map(w -> w * w))
+        return Flux.range(1, 64).flatMap(v -> // 1
+            Mono.just(v).subscribeOn(Schedulers.parallel()).map(w -> w * w))
                 .doOnError(ex -> ex.printStackTrace()) // 2
                 .doOnComplete(() -> System.out.println("Completed")) // 3
-                .subscribeOn(Schedulers.immediate()).subscribe(squares::add);
-        
-        try {Thread.sleep(100); } catch (Exception e) {}
-        return squares;
+                .subscribeOn(Schedulers.immediate()).collectList().block();
+    }
+
+    @Override
+    public Future<List<Integer>> doSquaresAsync(int count) {
+        return Flux.range(1, count).map(w -> w * w)
+                .subscribeOn(Schedulers.immediate()).collectList().toFuture();
+    }
+
+    @Override
+    public Future<String> doStringConcatAsync(int count) {
+        return Flux.range(0, count)
+                .map(i -> "i=" + i)
+                .collect(() -> new StringBuilder(),
+                    (stringBuilder, o) -> stringBuilder.append(o))
+                .map(StringBuilder::toString)
+                .toFuture();
+    }
+
+    @Override
+    public Future<List<Integer>> doParallelSquaresAsync(int count) {
+        return Flux.range(1, count).flatMap(v -> // 1
+            Mono.just(v).subscribeOn(Schedulers.parallel()).map(w -> w * w))
+                .subscribeOn(Schedulers.immediate()).collectList().toFuture();
+    }
+
+    @Override
+    public Future<String> doParallelStringConcatAsync(int count) {
+        BiConsumer<StringBuilder, Object> collector =
+                (stringBuilder, o) -> stringBuilder.append(o);
+        return Flux.range(0, count)
+                .map(i -> "i=" + i)
+                .window(10)
+                .flatMap(flux -> flux.subscribeOn(Schedulers.parallel())
+                        .collect(() -> new StringBuilder(), collector))
+                .collect(() -> new StringBuilder(), collector)
+                .map(StringBuilder::toString)
+                .single().toFuture();
     }
 
     public static void runComputation() throws Exception {

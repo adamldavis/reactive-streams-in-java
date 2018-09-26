@@ -8,7 +8,11 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Future;
 
+import io.reactivex.Observable;
+import io.reactivex.Single;
+import io.reactivex.functions.BiConsumer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -21,7 +25,7 @@ import io.reactivex.schedulers.Schedulers;
  * 
  * @author Adam L. Davis
  */
-public class RxJavaDemo {
+public class RxJavaDemo implements ReactiveStreamsDemo {
 
 
     public static List<Integer> doSquares() {
@@ -47,6 +51,50 @@ public class RxJavaDemo {
             .blockingSubscribe(squares::add);
             
         return squares;
+    }
+
+    @Override
+    public Future<List<Integer>> doSquaresAsync(int count) {
+        return Flowable.range(1, count)
+                .observeOn(Schedulers.computation()) 
+                .map(v -> v * v)
+                .collectInto((List<Integer>) new ArrayList<Integer>(), 
+                        (integers, integer) -> integers.add(integer))
+                .toFuture();
+    }
+
+    @Override
+    public Future<String> doStringConcatAsync(int count) {
+        return Observable.range(0, count).map(i -> "i=" + i)
+                .collectInto(new StringBuilder(),
+                    (stringBuilder, o) -> stringBuilder.append(o))
+                .map(StringBuilder::toString)
+                .toFuture();
+    }
+
+    @Override
+    public Future<List<Integer>> doParallelSquaresAsync(int count) {
+        return Flowable.range(1, count)
+                .flatMap(v ->
+                    Flowable.just(v)
+                            .subscribeOn(Schedulers.computation())
+                            .map(w -> w * w)
+                ).collectInto((List<Integer>) new ArrayList<Integer>(),
+                        (integers, integer) -> integers.add(integer))
+                .toFuture();
+    }
+
+    @Override
+    public Future<String> doParallelStringConcatAsync(int count) {
+        BiConsumer<StringBuilder, Object> collector =
+                (stringBuilder, o) -> stringBuilder.append(o); //1
+        return Observable.range(0, count).map(i -> "i=" + i)
+                .window(10) // 3
+                .flatMap(flow -> flow.subscribeOn(Schedulers.computation())
+                        .collectInto(new StringBuilder(), collector).toObservable())
+                .collectInto(new StringBuilder(), collector) //4
+                .map(StringBuilder::toString) //5
+                .toFuture();
     }
 
     public static void runComputation() throws Exception {
@@ -86,7 +134,7 @@ public class RxJavaDemo {
             e.printStackTrace();
         }
     }
-    
+
     static class FilePublisher implements Publisher<String> {
         BufferedReader reader;
         public FilePublisher(BufferedReader reader) { this.reader = reader; }
