@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import io.reactivex.Observable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -23,12 +24,14 @@ public class MessageController {
 
     @GetMapping("/messages/{param}")
     public ResponseEntity<String> createMessages(@PathVariable Integer param) {
-        Random rnd = new Random();
-        for (int i = 0; i < param; i++) {
-            String msg = types.get(rnd.nextInt(3)) + ": message " + i;
-            channel.publish(msg);
-            System.out.println("Posted message : " + msg);
-        }
+        final Random rnd = new Random();
+        // using RxJava to create the messages:
+        Observable.range(0, param)
+                .subscribeOn(io.reactivex.schedulers.Schedulers.computation())
+                .map(i -> types.get(rnd.nextInt(3)) + ": message " + i)
+                .doOnNext(msg -> channel.publish(msg))
+                .forEach(msg -> System.out.println("Posted message : " + msg));
+
         return ResponseEntity.ok(String.format(POSTED, param) + getInfo());
     }
 
@@ -38,6 +41,6 @@ public class MessageController {
     }
 
     private String getInfo() {
-        return String.format(INFO, channel.isAlive(), channel.getName(), channel.pollCount);
+        return String.format(INFO, channel.isAlive(), channel.getName(), channel.pollCount.get());
     }
 }

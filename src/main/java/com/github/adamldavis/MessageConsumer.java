@@ -1,7 +1,5 @@
 package com.github.adamldavis;
 
-import org.springframework.stereotype.Service;
-
 import io.reactivex.functions.Consumer;
 
 /**
@@ -9,16 +7,21 @@ import io.reactivex.functions.Consumer;
  * 8 lambda, but sometimes you might want to pull the code out into its own
  * class.
  */
-@Service
 public class MessageConsumer implements Consumer<String> {
+
+    final String type;
+
+    public MessageConsumer(String type) {
+        this.type = type;
+    }
 
     @Override
     public void accept(String message) {
         // do something with the Data
         if (message.startsWith("Error:"))
-            System.err.println("message=" + message);
+            System.err.println("type=" + type + " message=" + message);
         else
-            System.out.println("message=" + message);
+            System.out.println("type=" + type + " message=" + message);
     }
 
 }
