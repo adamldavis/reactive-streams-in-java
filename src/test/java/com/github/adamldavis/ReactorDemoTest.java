@@ -100,4 +100,28 @@ public class ReactorDemoTest {
         assertEquals("bar", list.get(1));
     }
 
+    @Test
+    public void create_vs_range() {
+        Flux<String> flux1 = Flux.create(sink -> {
+            for (int i = 0; i < 3; i++) {
+                sink.next("i=" + i);
+            }
+            sink.complete();
+        });
+        // is identical to:
+        Flux<String> flux2 = Flux.range(0, 3)
+                .map(i -> "i=" + i);
+
+        StepVerifier.create(flux1)
+                .expectNext("i=0")
+                .expectNext("i=1")
+                .expectNext("i=2")
+                .verifyComplete();
+        StepVerifier.create(flux2)
+                .expectNext("i=0")
+                .expectNext("i=1")
+                .expectNext("i=2")
+                .verifyComplete();
+    }
+
 }
