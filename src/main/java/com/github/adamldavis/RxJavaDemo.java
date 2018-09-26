@@ -1,11 +1,6 @@
 package com.github.adamldavis;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -97,8 +92,7 @@ public class RxJavaDemo implements ReactiveStreamsDemo {
                 .toFuture();
     }
 
-    public static void runComputation() throws Exception {
-        StringBuffer sb = new StringBuffer();
+    public static void runComputation() {
         Flowable<String> source = Flowable.fromCallable(() -> { //1
             Thread.sleep(1000); //  imitate expensive computation
             return "Done";
@@ -124,7 +118,6 @@ public class RxJavaDemo implements ReactiveStreamsDemo {
 
     public static void readFile(File file) {
         try (final BufferedReader br = new BufferedReader(new FileReader(file))) {
-
             Flowable<String> flow = Flowable.fromPublisher(new FilePublisher(br));
 
             flow.observeOn(Schedulers.io())
@@ -133,6 +126,16 @@ public class RxJavaDemo implements ReactiveStreamsDemo {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void readFile2(File file) {
+        Single.just(file)
+            .map(FileReader::new)
+            .map(BufferedReader::new)
+            .flatMapPublisher(reader ->
+                    Flowable.fromCallable(() -> reader.readLine())
+                            .takeUntil(line -> line == null)
+            ).blockingSubscribe(System.out::println);
     }
 
     static class FilePublisher implements Publisher<String> {

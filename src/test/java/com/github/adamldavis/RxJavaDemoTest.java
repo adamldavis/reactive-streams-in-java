@@ -34,6 +34,12 @@ public class RxJavaDemoTest {
     }
 
     @Test
+    public void testrunComputation() throws Exception {
+        demo.runComputation();
+        Thread.sleep(1100);
+    }
+
+    @Test
     public void testSubscriber() {
         TestSubscriber<Integer> ts =
                 Flowable.range(1, 5).test();
