@@ -2,9 +2,16 @@ package com.github.adamldavis;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Flow;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
+import io.reactivex.BackpressureStrategy;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.functions.BiConsumer;
@@ -129,13 +136,40 @@ public class RxJavaDemo implements ReactiveStreamsDemo {
     }
 
     public static void readFile2(File file) {
-        Single.just(file)
-            .map(FileReader::new)
-            .map(BufferedReader::new)
-            .flatMapPublisher(reader ->
-                    Flowable.fromCallable(() -> reader.readLine())
-                            .takeUntil(line -> line == null)
-            ).blockingSubscribe(System.out::println);
+        Single<BufferedReader> readerSingle = Single.just(file) //1
+                .observeOn(Schedulers.io()) //2
+                .map(FileReader::new)
+                .map(BufferedReader::new); //3
+        Flowable<String> flowable = readerSingle.flatMapPublisher(reader -> //4
+                Flowable.fromIterable( //5
+                        () -> Stream.generate(readLineSupplier(reader)).iterator()
+                ).takeWhile(line -> !"EOF".equals(line))); //6
+        flowable
+                .doOnNext(it -> System.out.println("thread="
+                        + Thread.currentThread().getName())) //7
+                .doOnError(ex -> ex.printStackTrace())
+                .blockingSubscribe(System.out::println); //8
+    }
+
+    private static Supplier<String> readLineSupplier(BufferedReader reader) {
+        return () -> { try {
+                String line = reader.readLine();
+                return line == null ? "EOF" : line;
+            } catch (IOException ex) { throw new RuntimeException(ex); }};
+    }
+
+    public static int countUsingBackpressure(long sleepMillis) throws InterruptedException {
+        AtomicInteger count = new AtomicInteger(0); //1
+        Flowable<Long> interval =
+                Observable.interval(1, TimeUnit.MILLISECONDS) //2
+                .toFlowable(BackpressureStrategy.LATEST) //3
+                .take(2000); //4
+        interval.subscribe(x -> {
+            Thread.sleep(100); //5
+            count.incrementAndGet();
+        });
+        Thread.sleep(sleepMillis); //6
+        return count.get();
     }
 
     static class FilePublisher implements Publisher<String> {

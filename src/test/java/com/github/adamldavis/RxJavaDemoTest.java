@@ -8,6 +8,7 @@ import io.reactivex.schedulers.TestScheduler;
 import io.reactivex.subscribers.TestSubscriber;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -37,6 +38,21 @@ public class RxJavaDemoTest {
     public void testrunComputation() throws Exception {
         demo.runComputation();
         Thread.sleep(1100);
+    }
+
+    @Test
+    public void testReadFile() {
+        demo.readFile(new File("README.md"));
+    }
+
+    @Test
+    public void testReadFile2() {
+        demo.readFile2(new File("README.md"));
+    }
+
+    @Test
+    public void testBackpressure() throws InterruptedException {
+        assertEquals(10, demo.countUsingBackpressure(1050));
     }
 
     @Test
