@@ -71,7 +71,7 @@ public class AkkaStreamsDemo implements ReactiveStreamsDemo {
         final ActorSystem system = ActorSystem.create("reactive-messages"); // 1
         ActorMaterializerSettings settings = ActorMaterializerSettings.create(system) //2
                 .withMaxFixedBufferSize(100) //3
-                .withSyncProcessingLimit(Runtime.getRuntime().availableProcessors()); //4
+                .withInputBuffer(8, 16); //4
 
         return ActorMaterializer.create(settings, system); //5
     }
@@ -151,5 +151,22 @@ public class AkkaStreamsDemo implements ReactiveStreamsDemo {
     public void saveTextFile(List<String> text) {
         Sink<String, CompletionStage<IOResult>> sink = lineSink("testfile.txt");
         Source.from(text).runWith(sink, materializer);
+    }
+
+    public Graph<SinkShape<String>, NotUsed> createFileSinkGraph() {
+        return GraphDSL.create(builder -> {
+            FlowShape<String, String> flowShape = builder
+                    .add(Flow.of(String.class).async()); //1
+            var sink = lineSink("testfile.txt"); //2
+            var sinkShape = builder.add(sink); //3
+
+            builder.from(flowShape.out()).to(sinkShape); //4
+            return new SinkShape<>(flowShape.in()); //5
+        });
+    }
+
+    public void saveTextFileUsingGraph(List<String> text) {
+        Sink.fromGraph(createFileSinkGraph())
+                .runWith(Source.from(text), materializer);
     }
 }

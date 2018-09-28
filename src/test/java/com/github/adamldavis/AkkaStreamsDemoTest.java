@@ -15,6 +15,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -106,6 +107,11 @@ public class AkkaStreamsDemoTest {
             final Throwable exception = ee.getCause();
             assertEquals(exception.getMessage(), "boom!");
         }
+    }
+
+    @Test
+    public void testGraph() {
+        demo.saveTextFileUsingGraph(Arrays.asList("foo", "bar"));
     }
 
 }
