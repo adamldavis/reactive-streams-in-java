@@ -6,10 +6,12 @@ import static org.junit.Assert.*;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import org.junit.Test;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -122,6 +124,23 @@ public class ReactorDemoTest {
                 .expectNext("i=1")
                 .expectNext("i=2")
                 .verifyComplete();
+    }
+
+    @Test(timeout = 1000)
+    public void testpush() {
+        List<Integer> list = Flux.push((FluxSink<Integer> sink) -> {
+            sink.next(1).next(2).next(3).complete();
+        }).collectList().block();
+
+        assertEquals(3, list.size());
+    }
+
+    @Test(timeout = 1000)
+    public void testGenerate() {
+        Flux<Long> flux = ReactorDemo.exampleSquaresUsingGenerate();
+        List<Long> list = flux.collectList().block();
+
+        assertEquals(11, list.size());
     }
 
 }

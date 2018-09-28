@@ -1,27 +1,21 @@
 package com.github.adamldavis;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.function.BiConsumer;
-
-import io.reactivex.Flowable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 
 /**
  * Demonstrates Reactor in action.
@@ -30,10 +24,22 @@ import reactor.core.scheduler.Schedulers;
  */
 public class ReactorDemo implements ReactiveStreamsDemo {
 
+    public static Flux<Long> exampleSquaresUsingGenerate() {
+        Flux<Long> squares = Flux.generate(
+                AtomicLong::new, //1
+                (state, sink) -> {
+                    long i = state.getAndIncrement();
+                    sink.next(i * i); //2
+                    if (i == 10) sink.complete(); //3
+                    return state;
+                });
+        return squares;
+    }
+
     public static List<Integer> doSquares() {
         List<Integer> squares = new ArrayList<>();
         Flux.range(1, 64) // 1
-                .onBackpressureBuffer().map(v -> v * v) // 3
+                .onBackpressureBuffer(256).map(v -> v * v) // 3
                 .subscribeOn(Schedulers.immediate())
                 .subscribe(squares::add); // 4
 
